@@ -1,0 +1,35 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+	<meta http-equiv="Content-Type" content="text/html;charset=UTF-8" />
+	<title>Element.Transformations Demo</title>
+	<script type="text/javascript" src="assets/javascripts/mootools.core.js"></script>
+	<script type="text/javascript" src="Source/Element.Transformations.js?source"></script>
+	<script type="text/javscript">
+Element.Styles.
+	</script>
+
+	<style type="text/css">
+	#test {
+		width: 500px;
+		margin-bottom: 38px;
+	}
+	</style>
+</head>
+
+<body>
+	<div id="test">window.addEvent('domready', function() {
+	
+		var scale = new Fx.Scale('test', {
+			duration: 'long',
+			transition: Fx.Transitions.Back.easeInOut
+		});
+		
+		document.id('set').addEvent('click',   function(ev) { scale.set(-1); });
+		document.id('start').addEvent('click', function(ev) { scale.start(1); });
+		
+	});</div>
+</body>
+
+</html>

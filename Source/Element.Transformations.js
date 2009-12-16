@@ -29,45 +29,47 @@ var regexes = {
     	translate: /translate\((\-?[\d\.]+(?:em|px|pt))(?:, ?(\-?[\d\.]+(?:em|px|pt)))?\)/i,
     	matrix: /matrix\((\-?[\d\.]+), ?(\-?[\d\.]+), ?(\-?[\d\.]+), ?(\-?[\d\.]+), ?(\-?[\d\.]+), ?(\-?[\d\.]+)\)/i
     },
-    cssProperty = null;
+    cssProperty = null,
+    trident = false;
 
 if (Browser.Engine.webkit) {
 	cssProperty = '-webkit-transform';
 } else if (Browser.Engine.gecko) {
 	cssProperty = '-moz-transform';
+} else if (Browser.Engine.trident){
+	trident = true;
+	cssProperty = 'filter';
 } else {
 	return false;
 }
 
 function setTransform(el, which, cssValue) {
-	var curStyle = el.getStyle(cssProperty);
-	if (curStyle == 'none') { curStyle = ''; }
-	
-	if (curStyle.test(regexes[which])) {
-		el.setStyle(cssProperty, curStyle.replace(regexes[which], cssValue));
+	if (trident) {
+		el.style.filter = cssValue;
 	} else {
-		el.setStyle(cssProperty, (curStyle + ' ' + cssValue).clean());
+		var curStyle = el.getStyle(cssProperty);
+		if (curStyle == 'none') { curStyle = ''; }
+	
+		if (curStyle.test(regexes[which])) {
+			el.setStyle(cssProperty, curStyle.replace(regexes[which], cssValue));
+		} else {
+			el.setStyle(cssProperty, (curStyle + ' ' + cssValue).clean());
+		}
 	}
+}
+
+function matrixize(m11, m12, m21, m22) {
+	return 'progid:DXImageTransform.Microsoft.Matrix('+"M11="+m11+",M12="+m12+",M21="+m21+",M22="+m22+",SizingMethod='auto expand')";
 }
 
 Element.Properties.rotation = {
 	
 	set: function(angle) {
-		var cssValue = 'rotate(' + angle + 'deg)',
-		    costheta = Math.cos(angle),
-		    sintheta = Math.sin(angle);
-		
-		if (Browser.Engine.trident) {
-			setTransform(this, 'rotate', cssValue);
-		} else {
-			this.style.filter = "progid:DXImageTransform.Microsoft.Matrix("+
-				"M11="+costheta+
-				",M12="+(-sintheta)+
-				",M21="+sintheta+
-				",M22="+costheta+
-				",SizingMethod='auto expand')";
-		}
-		
+		var c = Math.cos(angle),
+		    s = Math.sin(angle),
+		    cssValue = (trident) ? matrixize(c, -s, s, c) : 'rotate(' + angle + 'deg)';
+
+		setTransform(this, 'rotate', cssValue);
 		this.store('rotation', angle);
 	},
 	
@@ -80,7 +82,8 @@ Element.Properties.rotation = {
 Element.Properties.scaling = {
 
 	set: function(sx, sy) {
-		var cssValue = 'scale(' + sx + ($defined(sy) ? ',' + sy : '') + ')';
+		var cssValue = (trident) ? matrixize(0, sx, sy, 0) : 'scale(' + sx + ($defined(sy) ? ',' + sy : '') + ')';
+
 		setTransform(this, 'scale', cssValue);
 		this.store('scaling:sx', sx);
 		this.store('scaling:sy', sy);
@@ -96,7 +99,7 @@ Element.Properties.scaling = {
 Element.Properties.skewing = {
 
 	set: function(ax, ay) {
-		var cssValue = 'skew(' + ax + 'deg' + ($defined(ay) ? ',' + ay + 'deg' : '') + ')';
+		var cssValue = (trident) ? matrixize(1, 0, 0, 1/ax) : 'skew(' + ax + 'deg' + ($defined(ay) ? ',' + ay + 'deg' : '') + ')';
 		setTransform(this, 'skew', cssValue);
 		this.store('skewing:ax', ax);
 		this.store('skewing:ay', ay);
@@ -128,7 +131,7 @@ Element.Properties.translation = {
 Element.Properties.matrix = {
 
 	set: function (m11, m12, m21, m22, tx, ty) {
-		var cssValue = 'matrix(' + m11 + ',' + m12 + ',' + m21 + ',' + m22 + ',' + tx + ',' + ty + ')';
+		var cssValue = (trident) ? matrixize(m11, m12, m21, m22) : 'matrix(' + m11 + ',' + m12 + ',' + m21 + ',' + m22 + ',' + tx + ',' + ty + ')';
 		setTransform(this, 'matrix', cssValue);
 		this.store('matrix:m11', m11);
 		this.store('matrix:m12', m12);
