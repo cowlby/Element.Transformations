@@ -82,7 +82,7 @@ Element.Properties.rotation = {
 Element.Properties.scaling = {
 
 	set: function(sx, sy) {
-		var cssValue = (trident) ? matrixize(0, sx, sy, 0) : 'scale(' + sx + ($defined(sy) ? ',' + sy : '') + ')';
+		var cssValue = (trident) ? matrixize(sx, 0, 0, sy) : 'scale(' + sx + ($defined(sy) ? ',' + sy : '') + ')';
 
 		setTransform(this, 'scale', cssValue);
 		this.store('scaling:sx', sx);
