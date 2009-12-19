@@ -58,19 +58,31 @@ function setTransform(el, which, cssValue) {
 	}
 }
 
-function matrixize(m11, m12, m21, m22) {
-	return 'progid:DXImageTransform.Microsoft.Matrix('+"M11="+m11+",M12="+m12+",M21="+m21+",M22="+m22+",SizingMethod='auto expand')";
+function matrixize(m) {
+	return 'progid:DXImageTransform.Microsoft.Matrix('+"M11="+m[0][0]+",M12="+m[0][1]+",M21="+m[1][0]+",M22="+m[1][1]+",SizingMethod='auto expand')";
+}
+
+function matrixply(m1, m2) {
+	return [
+		[ m1[0][0]*m2[0][0] + m1[0][1]*m2[1][0], m1[0][0]*m2[0][1] + m1[0][1]*m2[1][1] ],
+		[ m1[1][0]*m2[0][0] + m1[1][1]*m2[1][0], m1[1][0]*m2[0][1] + m1[1][1]*m2[1][1] ]
+	]
 }
 
 Element.Properties.rotation = {
 	
 	set: function(angle) {
-		var c = Math.cos(angle),
-		    s = Math.sin(angle),
-		    cssValue = (trident) ? matrixize(c, -s, s, c) : 'rotate(' + angle + 'deg)';
+		var a = (angle - this.retrieve('rotation', 0)).toRadians(),
+		    c = Math.cos(a),
+		    s = Math.sin(a),
+		    from = this.retrieve('matrix', [[1, 0],[0, 1]]),
+		    to = [[c, s],[-s, c]],
+		    matrix = matrixply(from, to),
+		    cssValue = (trident) ? matrixize(matrix) : 'rotate(' + angle + 'deg)';
 
 		setTransform(this, 'rotate', cssValue);
 		this.store('rotation', angle);
+		this.store('matrix', matrix);
 	},
 	
 	get: function() {
@@ -82,11 +94,17 @@ Element.Properties.rotation = {
 Element.Properties.scaling = {
 
 	set: function(sx, sy) {
-		var cssValue = (trident) ? matrixize(sx, 0, 0, sy) : 'scale(' + sx + ($defined(sy) ? ',' + sy : '') + ')';
+		var scaleX = sx / this.retrieve('scaling:sx', 1),
+		    scaleY = sy ? sy / this.retrieve('scaling:sy', 1) : scaleX,
+		    from = this.retrieve('matrix', [[1,0],[0,1]]),
+		    to = [[scaleX, 0],[0, scaleY]],
+		    matrix = matrixply(from, to),
+		    cssValue = (trident) ? matrixize(matrix) : 'scale(' + sx + ($defined(sy) ? ',' + sy : '') + ')';
 
 		setTransform(this, 'scale', cssValue);
 		this.store('scaling:sx', sx);
-		this.store('scaling:sy', sy);
+		this.store('scaling:sy', sy || sx);
+		this.store('matrix', matrix);
 	},
 
 	get: function() {
@@ -99,10 +117,15 @@ Element.Properties.scaling = {
 Element.Properties.skewing = {
 
 	set: function(ax, ay) {
-		var cssValue = (trident) ? matrixize(1, 0, 0, 1/ax) : 'skew(' + ax + 'deg' + ($defined(ay) ? ',' + ay + 'deg' : '') + ')';
+		var from = this.retrieve('matrix', [[1,0],[0,1]]),
+		    to = [1, Math.tan(ax.toRadians()), ay ? Math.tan(ay.toRadians()) : 0, 1],
+		    matrix = matrixply(from, to),
+		    cssValue = (trident) ? matrixize(matrix) : 'skew(' + ax + 'deg' + ($defined(ay) ? ',' + ay + 'deg' : '') + ')';
+		
 		setTransform(this, 'skew', cssValue);
 		this.store('skewing:ax', ax);
 		this.store('skewing:ay', ay);
+		this.store('matrix', matrix);
 	},
 	
 	get: function() {
@@ -131,7 +154,10 @@ Element.Properties.translation = {
 Element.Properties.matrix = {
 
 	set: function (m11, m12, m21, m22, tx, ty) {
-		var cssValue = (trident) ? matrixize(m11, m12, m21, m22) : 'matrix(' + m11 + ',' + m12 + ',' + m21 + ',' + m22 + ',' + tx + ',' + ty + ')';
+		var matrix = [m11, m12, m21, m22],
+		    cssValue = (trident) ? matrixize(m11, m12, m21, m22) :
+		                           'matrix(' + m11 + ',' + m12 + ',' + m21 + ',' + m22 + ',' + tx + ',' + ty + ')';
+		
 		setTransform(this, 'matrix', cssValue);
 		this.store('matrix:m11', m11);
 		this.store('matrix:m12', m12);
@@ -169,6 +195,11 @@ Element.implement({
 	setMatrix: function(m11, m12, m21, m22, tx, ty) { return this.set('matrix', m11, m12, m21, m22, tx, ty); },
 	getMatrix: function() { return this.get('matrix'); }
 	
+});
+
+Number.implement({
+	toRadians: function() { return this * Math.PI/180; },
+	toDegrees: function() { return this * 180/Math.PI; }
 });
 
 })();
