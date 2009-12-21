@@ -11,7 +11,7 @@ Element.Styles.
 	</script>
 
 	<style type="text/css">
-	#test {
+	#test, #test2 {
 		width: 500px;
 		margin-bottom: 38px;
 	}
@@ -20,6 +20,18 @@ Element.Styles.
 
 <body>
 	<div id="test">window.addEvent('domready', function() {
+	
+		var scale = new Fx.Scale('test', {
+			duration: 'long',
+			transition: Fx.Transitions.Back.easeInOut
+		});
+		
+		document.id('set').addEvent('click',   function(ev) { scale.set(-1); });
+		document.id('start').addEvent('click', function(ev) { scale.start(1); });
+		
+	});</div>
+	
+	<div id="test2">window.addEvent('domready', function() {
 	
 		var scale = new Fx.Scale('test', {
 			duration: 'long',
